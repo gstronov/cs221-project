@@ -61,7 +61,7 @@ class QLearningAlgorithm():
                 self.weights[feature] -= self.getStepSize()*(self.getQ(state, action) - (reward + self.discount*Vopt))*value
         # END_YOUR_CODE
 
-    def getWeights(self)
+    def getWeights(self):
     	return self.weights
 
 def getxy(obs, pixel):
@@ -89,19 +89,24 @@ def featureExtractorXY(state, action):
 	xvelocity = curBall[1] - prevBall[1]
 	yvelocity = curBall[0] - prevBall[0]
 
+	if xvelocity > 0:
+		features.append((("vx+", action), 1))
+	else:
+		features.append((("vx-", action), 1))
+	
+	if yvelocity > 0:
+		features.append((("vy+", action), 1))
+	else:
+		features.append((("vy-", action), 1))
+	
+
 	if curBall[0] - agentPaddle > 0:
 		features.append((("ballBelow", action), 1))
 	else:
 		features.append((("ballAbove", action), 1))
-
-	if prevBall != [0, 0]:
-		features.append((("prevBall", round(prevBall[0]), round(prevBall[1]), action), 1))
 	if curBall != [0, 0]:
 		features.append((("curBall", round(curBall[0]), round(curBall[1]), action), 1))
 	features.append((("agentPaddle", round(agentPaddle), action), 1))
-	features.append((("opPaddle", round(opPaddle), action), 1))
-	features.append((("vx", round(xvelocity), action), 1))
-	features.append((("vy", round(yvelocity), action), 1))
 	return features
 
 
@@ -129,7 +134,7 @@ if __name__ == '__main__':
     num_games = 1000
     reward = 0
     done = False
-    q = QLearningAlgorithm([0, 2, 3], discount = 1, featureExtractor = featureExtractorXY, explorationProb=0.3)
+    q = QLearningAlgorithm([0, 2, 3], discount = 1, featureExtractor = featureExtractorXY, explorationProb=.8)
 
     #plays num_games number of games 
     for i in range(num_games):
@@ -137,7 +142,7 @@ if __name__ == '__main__':
         observation = new_observation
         prev_obs = observation
         while True:
-            #env.render() #allows video of game in progress to be shown 
+            env.render() #allows video of game in progress to be shown 
             action = agent.act((observation, new_observation), reward, done, q)
             prev_obs = observation
             observation = new_observation
