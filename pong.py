@@ -16,11 +16,15 @@ class QLearningAlgorithm():
         self.featureExtractor = featureExtractor
         self.explorationProb = explorationProb
         self.weights = defaultdict(float)
+        s = ((("(bally", 0), -0.3698867153701385), (("agentPaddle", 0), -0.16418305598137223), (("ballx", 2), -0.3878754486805864), (("vx-", 3), -0.3053933036525352), (("bally", 2), -0.3880726587047115), (("ballx", 0), -0.3696987470440379), (("ballx", 3), -0.4460864605235741), (("vx+", 0), -0.030304344660613314), (("vx-", 2), -0.36672107002817206), (("vx+", 3), -0.14437899992139339), (("vx-", 0), -0.38273442545920633), (("vy+", 0), -0.03027404031595268), (("vx+", 2), -0.024489114942032836), (("bally", 3), -0.44631326714910075), (("vy-", 2), -0.36635434895812935), (("vy+", 2), -0.0244646258270908), (("vy-", 3), -0.305087910348901), (("agentPaddle", 3), -0.14925896896580296), (("vy+", 3), -0.14423462092147196), (("vy-", 0), -0.3823516910337465), (("agentPaddle", 2), -0.15026583788215764))
+        for k, v in s:
+            self.weights[k] = v
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
         score = state[2]
-        for f, v in self.featureExtractor(state, action):
+        features = self.featureExtractor(state, action)
+        for f, v in features:
             score += self.weights[f] * v
         return score
 
@@ -30,6 +34,8 @@ class QLearningAlgorithm():
     def getAction(self, state, done):
         if done:
             return 0
+        if random.random() < self.explorationProb/4:
+            return random.choice([0, 2, 3])
         if random.random() < self.explorationProb:
             for i in range(35, 195):
                 row = state[1][i]
@@ -46,7 +52,7 @@ class QLearningAlgorithm():
 
     # Call this function to get the step size to update the weights.
     def getStepSize(self):
-        return .1
+        return .001
 
     # We will call this function with (s, a, r, s'), which you should use to update |weights|.
     # Note that if s is a terminal state, then s' will be None.  Remember to check for this.
@@ -63,6 +69,12 @@ class QLearningAlgorithm():
     def getWeights(self):
         return self.weights
 
+    def setExplorationProbability(self, p)
+        self.explorationProb = p
+
+    def getExProb(self)
+        return self.explorationProb
+
 @jit(nopython=True, cache=True)
 def getPositions(obs):
     answer = np.zeros(3)
@@ -70,11 +82,11 @@ def getPositions(obs):
         for j in range(0, 160):
             #ball
             if obs[i, j, 0] == 236 and obs[i, j, 1] == 236 and obs[i, j, 2] == 236:
-                answer[0] = i/210
-                answer[1] = j/160
+                answer[0] = float(i)/210
+                answer[1] = float(j)/160
             #paddle
             elif obs[i, j, 0] == 92 and obs[i, j, 1] == 186 and obs[i, j, 2] ==  92:
-                answer[2] = i/210
+                answer[2] = float(i)/210
     return answer
 
 #state is tuple of prevObservation, curObservation, score
@@ -99,6 +111,7 @@ def featureExtractorXY(state, action):
     features.append((("agentPaddle", action), curPos[2]))
     features.append((("ballx", action), curPos[1]))
     features.append((("bally", action), curPos[0]))
+    features.append((("diff", action),  curPos[0] - curPos[2]))
     return features
 
 
@@ -108,8 +121,6 @@ class QLearningAgent(object):
 
     def act(self, observation, reward, done, q):
         return q.getAction(observation, done)
-
-
 
 if __name__ == '__main__':
     logger.set_level(logger.WARN)
@@ -126,6 +137,7 @@ if __name__ == '__main__':
     num_games = 10000
     reward = 0
     done = False
+      
     q = QLearningAlgorithm([0, 2, 3], discount = 1, featureExtractor = featureExtractorXY, explorationProb=.8)
 
     #plays num_games number of games 
@@ -146,8 +158,11 @@ if __name__ == '__main__':
             #the end of the game has been reached
             if done:
                 break
-        if i % 1000 == 0:
+        if i % 50 == 0:
             print q.getWeights()
-        print(str(i) + " games completed")
+        if i % 500 == 0 and i != 0:
+            curProb = q.getExProb()
+            q.setExplorationProbability(max([curProb - .2, 0.1]))
+        print(str(i) + " games completed with current game's score" + str(score))
     #Closes the environment            
     env.close()
