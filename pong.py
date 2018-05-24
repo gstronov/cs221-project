@@ -16,9 +16,6 @@ class QLearningAlgorithm():
         self.featureExtractor = featureExtractor
         self.explorationProb = explorationProb
         self.weights = defaultdict(float)
-        s = ((("(bally", 0), -0.3698867153701385), (("agentPaddle", 0), -0.16418305598137223), (("ballx", 2), -0.3878754486805864), (("vx-", 3), -0.3053933036525352), (("bally", 2), -0.3880726587047115), (("ballx", 0), -0.3696987470440379), (("ballx", 3), -0.4460864605235741), (("vx+", 0), -0.030304344660613314), (("vx-", 2), -0.36672107002817206), (("vx+", 3), -0.14437899992139339), (("vx-", 0), -0.38273442545920633), (("vy+", 0), -0.03027404031595268), (("vx+", 2), -0.024489114942032836), (("bally", 3), -0.44631326714910075), (("vy-", 2), -0.36635434895812935), (("vy+", 2), -0.0244646258270908), (("vy-", 3), -0.305087910348901), (("agentPaddle", 3), -0.14925896896580296), (("vy+", 3), -0.14423462092147196), (("vy-", 0), -0.3823516910337465), (("agentPaddle", 2), -0.15026583788215764))
-        for k, v in s:
-            self.weights[k] = v
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
@@ -52,7 +49,7 @@ class QLearningAlgorithm():
 
     # Call this function to get the step size to update the weights.
     def getStepSize(self):
-        return .001
+        return .1
 
     # We will call this function with (s, a, r, s'), which you should use to update |weights|.
     # Note that if s is a terminal state, then s' will be None.  Remember to check for this.
@@ -69,24 +66,24 @@ class QLearningAlgorithm():
     def getWeights(self):
         return self.weights
 
-    def setExplorationProbability(self, p)
+    def setExplorationProbability(self, p):
         self.explorationProb = p
 
-    def getExProb(self)
+    def getExProb(self):
         return self.explorationProb
 
 @jit(nopython=True, cache=True)
 def getPositions(obs):
     answer = np.zeros(3)
-    for i in range (24, 210):
+    for i in range(195, 35, -1):
         for j in range(0, 160):
             #ball
             if obs[i, j, 0] == 236 and obs[i, j, 1] == 236 and obs[i, j, 2] == 236:
-                answer[0] = float(i)/210
-                answer[1] = float(j)/160
+                answer[0] = i
+                answer[1] = j
             #paddle
             elif obs[i, j, 0] == 92 and obs[i, j, 1] == 186 and obs[i, j, 2] ==  92:
-                answer[2] = float(i)/210
+                answer[2] = i
     return answer
 
 #state is tuple of prevObservation, curObservation, score
@@ -108,10 +105,16 @@ def featureExtractorXY(state, action):
     else:
         features.append((("vy-", action), 1))
     
-    features.append((("agentPaddle", action), curPos[2]))
-    features.append((("ballx", action), curPos[1]))
-    features.append((("bally", action), curPos[0]))
-    features.append((("diff", action),  curPos[0] - curPos[2]))
+    features.append((("agentPaddle", action, curPos[2]), 1))
+    features.append((("ballx", action, curPos[1]), 1))
+    features.append((("bally", action, curPos[0]), 1))
+    
+    if curPos[0] - curPos[2] > 36:
+        features.append((("ballBelow", action), 1))
+    elif curPos[0] - curPos[2] > 0:
+        features.append((("ballSame", action), 1))
+    else:
+        features.append((("ballAbove", action), 1))
     return features
 
 
@@ -158,11 +161,11 @@ if __name__ == '__main__':
             #the end of the game has been reached
             if done:
                 break
-        if i % 50 == 0:
+        if i % 100 == 0:
             print q.getWeights()
         if i % 500 == 0 and i != 0:
             curProb = q.getExProb()
             q.setExplorationProbability(max([curProb - .2, 0.1]))
-        print(str(i) + " games completed with current game's score" + str(score))
+        print(str(i) + " games completed with current game's score " + str(score))
     #Closes the environment            
     env.close()
