@@ -16,11 +16,15 @@ class QLearningAlgorithm():
         self.featureExtractor = featureExtractor
         self.explorationProb = explorationProb
         self.weights = defaultdict(float)
+        #for k, v in s:
+            #self.weights[k] = v
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
         score = state[2]
         features = self.featureExtractor(state, action)
+        if features == None:
+            return score
         for f, v in features:
             score += self.weights[f] * v
         return score
@@ -29,6 +33,8 @@ class QLearningAlgorithm():
     # Here we use the epsilon-greedy algorithm: with probability
     # |explorationProb|, take a random action.
     def getAction(self, state, done):
+        if self.featureExtractor(state, 0) == None:
+            return 0
         if done:
             return 0
         if random.random() < self.explorationProb/4:
@@ -49,7 +55,7 @@ class QLearningAlgorithm():
 
     # Call this function to get the step size to update the weights.
     def getStepSize(self):
-        return .1
+        return .001
 
     # We will call this function with (s, a, r, s'), which you should use to update |weights|.
     # Note that if s is a terminal state, then s' will be None.  Remember to check for this.
@@ -57,6 +63,8 @@ class QLearningAlgorithm():
     # self.getQ() to compute the current estimate of the parameters.
     def incorporateFeedback(self, state, action, reward, newState):
         # BEGIN_YOUR_CODE (our solution is 12 lines of code, but don't worry if you deviate from this)
+        if self.featureExtractor(state, action) == None:
+            return
         if newState != None:
             Vopt = max(self.getQ(newState, a) for a in self.actions)
             for feature, value in self.featureExtractor(state, action):
@@ -86,6 +94,12 @@ def getPositions(obs):
                 answer[2] = i
     return answer
 
+def round(x):
+    divided = (int(x)/10)*10
+    if math.fabs(x - divided) > math.fabs(x -(divided + 10)):
+        return divided + 10
+    return divided
+
 #state is tuple of prevObservation, curObservation, score
 def featureExtractorXY(state, action):
     features = []
@@ -94,6 +108,9 @@ def featureExtractorXY(state, action):
     
     xvelocity = curPos[1] - prevPos[1]
     yvelocity = curPos[0] - prevPos[0]
+
+    if curPos[0] == 0:
+        return None
 
     if xvelocity > 0:
         features.append((("vx+", action), 1))
@@ -105,9 +122,8 @@ def featureExtractorXY(state, action):
     else:
         features.append((("vy-", action), 1))
     
-    features.append((("agentPaddle", action, curPos[2]), 1))
-    features.append((("ballx", action, curPos[1]), 1))
-    features.append((("bally", action, curPos[0]), 1))
+    features.append((("agentPaddle", action, round(curPos[2])), 1))
+    features.append((("ball", action, round(curPos[1]), round(curPos[0])), 1))
     
     if curPos[0] - curPos[2] > 36:
         features.append((("ballBelow", action), 1))
@@ -165,7 +181,7 @@ if __name__ == '__main__':
             print q.getWeights()
         if i % 500 == 0 and i != 0:
             curProb = q.getExProb()
-            q.setExplorationProbability(max([curProb - .2, 0.1]))
-        print(str(i) + " games completed with current game's score " + str(score))
+            q.setExplorationProbability(max([curProb - .3, 0.1]))
+        print(str(i + 1) + " games completed with current game's score " + str(score))
     #Closes the environment            
     env.close()
