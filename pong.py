@@ -1,6 +1,6 @@
 
 
-#Plays games of Pong using Open Ai Gym using a Q-learning Algorithm. 
+#Plays games of Pong using Open AI Gym's Pong environment and a Q-learning Algorithm. 
 
 import math, random
 from collections import defaultdict
