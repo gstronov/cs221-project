@@ -23,7 +23,7 @@ class QLearningAlgorithm():
         self.featureExtractor = featureExtractor
         self.explorationProb = explorationProb
         self.weights = defaultdict(float)
-        self.rand = 5
+        self.rand = rand
 
     # Return the Q function associated with the weights and features
     def getQ(self, state, action):
@@ -203,7 +203,7 @@ if __name__ == '__main__':
     reward = 0
     done = False
       
-    q = QLearningAlgorithm([0, 2, 3], discount = 1, featureExtractor = featureExtractorState, explorationProb=.8)
+    q = QLearningAlgorithm([0, 2, 3], discount = 1, featureExtractor = featureExtractorState, explorationProb=.8, rand = 5)
 
     #plays num_games number of games 
     for i in range(num_games):
